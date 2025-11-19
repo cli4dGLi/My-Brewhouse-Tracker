@@ -14,9 +14,22 @@ st.set_page_config(
 # ----------------------------------------------------
 # LOGO + TITLE
 # ----------------------------------------------------
-st.image(r"C:\Users\clifford.srekumah-gl\Downloads\ggbl.png", width=150)
+from pathlib import Path
+import streamlit as st
+import pandas as pd
+from datetime import date
+
+st.set_page_config(
+    page_title="My Brewhouse Tracker",
+    page_icon="🍺",
+    layout="wide"
+)
+
+# Compute path to logo relative to this file
+logo_path = Path(__file__).parent / "ggbl.png"
+st.image(str(logo_path), width=150)
+
 st.title("🍺 My Brewhouse Tracker")
-st.write("Enter brewhouse data for a single brew using the form below.")
 
 # ----------------------------------------------------
 # FORM SECTION
@@ -227,3 +240,4 @@ if submitted:
         file_name=f"brewhouse_brew_{brew_number}.csv",
         mime="text/csv",
     )
+
