@@ -12,7 +12,9 @@ Core checks cover calculations, reporting boundaries, site separation, missing m
 
 ## Continuous integration
 
-[Beer Loss checks](https://github.com/cli4dGLi/My-Brewhouse-Tracker/actions) runs all tests on the beer-loss-public branch with Python 3.12 and an isolated PostgreSQL 16 service. Its test records and credentials are synthetic. See the latest matching commit's run for its result.
+[Run 34897159549](https://github.com/cli4dGLi/My-Brewhouse-Tracker/actions/runs/34897159549) passed all **33 tests** on Python 3.12 with an isolated PostgreSQL 16 service. Tested application-code commit: `1503a864ef70e358b3d07d427c9b7d8d8bd7a9d4`. Its test records and credentials were synthetic.
+
+The initial schema was then applied successfully through the Neon connection on an isolated check branch and on the dedicated production database. Both contain zero production records. The live Streamlit-to-database connection still needs verification after deployment.
 
 ## Deployment checks still required
 
