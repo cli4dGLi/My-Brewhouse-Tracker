@@ -1,0 +1,46 @@
+name: Beer Loss checks
+on:
+  push:
+    branches: [beer-loss-public]
+    paths:
+      - beer_loss_app/**
+      - .github/workflows/beer-loss-ci.yml
+permissions:
+  contents: read
+jobs:
+  beer-loss:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local_ci_only
+          POSTGRES_DB: beer_loss_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: beer_loss_app
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://postgres:local_ci_only@localhost:5432/beer_loss_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            beer_loss_app
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install app dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Verify app, calculations and record retention
+        run: python -m pytest tests -q
