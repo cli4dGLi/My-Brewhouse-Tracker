@@ -10,34 +10,35 @@ A password-protected Streamlit app for brewery logs and shift, day, WTD, MTD and
 - Python: **3.12**
 - GitHub URL: https://github.com/cli4dGLi/My-Brewhouse-Tracker/blob/beer-loss-public/beer_loss_app/streamlit_app.py
 
-The repository is public. **All live app pages require the application password**, including dashboards, logs, downloads and administration. Public hosting is not anonymous access to the records.
+The repository is public. **All live app pages require the configured username and password**, including dashboards, logs, downloads and administration. Public hosting is not anonymous access to the records.
 
 In **Advanced settings → Secrets**, enter your private values:
 
 ~~~toml
 APP_MODE = "live"
+APP_USERNAME = "REPLACE-WITH-YOUR-USERNAME"
 APP_PASSWORD = "REPLACE-WITH-A-UNIQUE-PRIVATE-PASSWORD-16-CHARS-MINIMUM"
 DATABASE_URL = "postgresql+psycopg://USER:PASSWORD@HOST/DATABASE?sslmode=require"
 ADMIN_PIN = "REPLACE-WITH-A-DIFFERENT-LONG-PRIVATE-ADMIN-PIN"
 LOG_PIN = ""
 ~~~
 
-Use a unique, randomly generated application password of at least 16 characters and a different administrator passphrase. Share the application password only with approved staff. Keep the administrator PIN with administrators. A blank LOG_PIN allows **signed-in** staff to log entries; it never bypasses the application login.
+Set APP_USERNAME to your chosen login name. Usernames are case-sensitive; surrounding spaces are ignored. Use a unique, randomly generated application password of at least 16 characters and a different administrator passphrase. Share the application login only with approved staff. Keep the administrator PIN with administrators. A blank LOG_PIN allows **signed-in** staff to log entries; it never bypasses the application login.
 
 Secrets belong only in Streamlit settings, never in GitHub, screenshots or chat. Keep the uploaded production workbook and database backups out of this public repository.
 
-Live mode fails closed without a valid application password, encrypted PostgreSQL connection and administrator PIN. It never falls back to local storage. The app creates its table on first connection; controlled provisioning can initialise SQLAlchemy metadata using a direct connection before using the pooled application connection.
+Live mode fails closed without a configured username, valid application password, encrypted PostgreSQL connection and administrator PIN. It never falls back to local storage. The app creates its table on first connection; controlled provisioning can initialise SQLAlchemy metadata using a direct connection before using the pooled application connection.
 
 Official instructions: [Deployment](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy) and [Secrets](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management).
 
 ## Login behaviour and limits
 
-- Password fields mask typing. Submitted login passwords are removed from session state after checking.
+- Password fields mask typing. Submitted usernames and login passwords are removed from session state after checking.
 - Sign out clears authentication, administrator credentials and unsaved form state.
 - Access expires after 30 minutes without interaction, or 12 hours after sign-in. Expiry is enforced on the next interaction; a rendered page cannot be recalled from a user's screen.
-- Changing APP_PASSWORD invalidates existing sessions on their next interaction. A server restart requires sign-in again.
+- Changing APP_USERNAME or APP_PASSWORD invalidates existing sessions on their next interaction. A server restart requires sign-in again.
 - A server-wide limit allows ten sign-in attempts per minute across browser sessions. This in-memory limit resets on restart and is not a distributed abuse-prevention service.
-- This is shared-password access, not named accounts, MFA or individual role-based identity. Entered operator/reviewer names remain self-reported.
+- The configured username and password form one shared application login. Separate staff accounts, MFA and individual identity roles are not included. Entered operator/reviewer names remain self-reported.
 
 ## Historical data and reporting
 

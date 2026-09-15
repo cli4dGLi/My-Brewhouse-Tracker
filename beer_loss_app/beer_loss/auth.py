@@ -2,6 +2,7 @@
 from collections import deque
 from hashlib import sha256
 import hmac
+import json
 import math
 import os
 import secrets
@@ -11,6 +12,7 @@ import time
 import streamlit as st
 
 AUTH_KEY = "_beer_loss_auth"
+USERNAME_KEY = "_beer_loss_username"
 PASSWORD_KEY = "_beer_loss_password"
 MESSAGE_KEY = "_beer_loss_login_message"
 IDLE_SECONDS = 30 * 60
@@ -27,8 +29,9 @@ def setting(name, default=""):
         return default
 
 
-def configured(password):
-    return 16 <= len(password) <= 1024 and not password.upper().startswith("REPLACE")
+def configured(username, password):
+    return (1 <= len(username) <= 120 and not username.upper().startswith("REPLACE")
+            and 16 <= len(password) <= 1024 and not password.upper().startswith("REPLACE"))
 
 
 def password_matches(provided, expected):
@@ -38,16 +41,17 @@ def password_matches(provided, expected):
     return hmac.compare_digest(sha256(provided.encode()).digest(), sha256(expected.encode()).digest())
 
 
-def revision(password):
-    return hmac.new(_SERVER_KEY, password.encode(), "sha256").hexdigest()
+def revision(username, password):
+    credentials = json.dumps([username, password], ensure_ascii=False).encode()
+    return hmac.new(_SERVER_KEY, credentials, "sha256").hexdigest()
 
 
-def session_valid(state, password, now):
+def session_valid(state, username, password, now):
     auth = state.get(AUTH_KEY)
-    if not configured(password) or not isinstance(auth, dict):
+    if not configured(username, password) or not isinstance(auth, dict):
         return False
     try:
-        return (hmac.compare_digest(auth["revision"], revision(password))
+        return (hmac.compare_digest(auth["revision"], revision(username, password))
                 and 0 <= now - auth["started"] < SESSION_SECONDS
                 and 0 <= now - auth["last_seen"] < IDLE_SECONDS)
     except (KeyError, TypeError):
@@ -85,10 +89,12 @@ def login_throttle():
 
 
 def attempt_login():
-    # Popping the submitted secret before rendering the next page.
+    # Removing submitted credentials before rendering the next page.
+    provided_username = st.session_state.pop(USERNAME_KEY, "").strip()
     provided = st.session_state.pop(PASSWORD_KEY, "")
+    expected_username = setting("APP_USERNAME").strip()
     expected = setting("APP_PASSWORD")
-    if not configured(expected):
+    if not configured(expected_username, expected):
         clear_session()
         return
     now = time.monotonic()
@@ -96,11 +102,14 @@ def attempt_login():
     if wait:
         st.session_state[MESSAGE_KEY] = f"Too many sign-in attempts. Try again in {wait} seconds."
         return
-    if not password_matches(provided, expected):
-        st.session_state[MESSAGE_KEY] = "Incorrect password."
+    # Checking both values and returning the same error for either mismatch.
+    username_ok = password_matches(provided_username, expected_username)
+    password_ok = password_matches(provided, expected)
+    if not (username_ok & password_ok):
+        st.session_state[MESSAGE_KEY] = "Incorrect username or password."
         return
     clear_session()
-    st.session_state[AUTH_KEY] = {"revision": revision(expected), "started": now, "last_seen": now}
+    st.session_state[AUTH_KEY] = {"revision": revision(expected_username, expected), "started": now, "last_seen": now}
 
 
 def require_login():
@@ -111,13 +120,14 @@ def require_login():
         clear_session()
         st.error("APP_MODE must be live or demo.")
         st.stop()
+    expected_username = setting("APP_USERNAME").strip()
     expected = setting("APP_PASSWORD")
-    if not configured(expected):
+    if not configured(expected_username, expected):
         clear_session()
-        st.error("Sign-in is not configured. The administrator must set a private APP_PASSWORD of at least 16 characters in Streamlit Secrets.")
+        st.error("Sign-in is not configured. The administrator must set APP_USERNAME and a private APP_PASSWORD of at least 16 characters in Streamlit Secrets.")
         st.stop()
     now = time.monotonic()
-    if session_valid(st.session_state, expected, now):
+    if session_valid(st.session_state, expected_username, expected, now):
         st.session_state[AUTH_KEY]["last_seen"] = now
         st.sidebar.button("Sign out", on_click=clear_session, key="sign_out", width="stretch")
         return
@@ -127,10 +137,11 @@ def require_login():
     st.title("🍺 Beer Loss Operations")
     st.write("Sign in to view the dashboard and enter production logs.")
     with st.form("application_login"):
+        st.text_input("Username", key=USERNAME_KEY, max_chars=120)
         st.text_input("Application password", type="password", key=PASSWORD_KEY, max_chars=1024)
         st.form_submit_button("Sign in", on_click=attempt_login)
     message = st.session_state.pop(MESSAGE_KEY, None)
     if message:
         st.error(message)
-    st.caption("Access is restricted to people who have been given the application password.")
+    st.caption("Access is restricted to people who have been given the application username and password.")
     st.stop()

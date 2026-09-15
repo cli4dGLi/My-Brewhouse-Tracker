@@ -59,7 +59,7 @@ The original audit and importer have been recovered, but their integration into 
 
 ## History and backups
 
-All live pages require the application password, including dashboards and logs. Signed-in users can submit entries; an optional logging PIN adds another submission check. A separate administrator PIN protects voiding and complete backups. Use Sign out on shared devices. Entered names are self-reported; a shared password is not individual identity verification.
+All live pages require the configured username and password, including dashboards and logs. Signed-in users can submit entries; an optional logging PIN adds another submission check. A separate administrator PIN protects voiding and complete backups. Use Sign out on shared devices. Entered names are self-reported; the shared application login does not identify individual operators.
 
 Voiding preserves original details and records the reviewer, reason and UTC time. Backup export includes active and voided records from both breweries. Restore requires an empty database.
 
